@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 1 (schema, validators, indexes)**. Later phases add seed data, CRUD, aggregations, UI, tests and docs.
+> Status: **Phase 2 (seed data)**. Later phases add CRUD, aggregations, UI, tests and docs.
 
 ## Prerequisites
 
@@ -55,6 +55,22 @@ docker exec -it festflow-mongo mongosh spectra /queries/01_validation_demo.js
 mongosh spectra queries/00_setup.js
 mongosh spectra queries/01_validation_demo.js
 ```
+
+### Seed demo data
+
+```bash
+python manage.py seed --reset                  # 5,000 bookings; drops the DB, runs init_db, then verify_data
+python manage.py seed --reset --bookings 50000 # bigger dataset for the explain() comparisons
+python manage.py verify_data                   # re-check invariants any time
+mongosh spectra queries/05_verify_data.js      # the same checks in mongosh
+```
+
+The fest is placed relative to today: days 1-3 are the three previous days
+(completed, with check-ins), today is a break, days 4-5 are the next two days
+(scheduled, bookable). Re-seed on another day and the fest moves with you.
+
+Demo logins (password `Spectra@2026`): `organizer@spectra.test`,
+`attendee@spectra.test`, `volunteer@spectra.test`.
 
 > If a native MongoDB service already listens on 27017, `docker compose up` cannot bind
 > that port. Either stop the native service or use it instead of Docker.
