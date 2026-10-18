@@ -1,0 +1,23 @@
+# Single-node MongoDB 8.0 for local development.
+# NOTE: no authentication — dev only. Production needs auth, TLS and a replica set
+# (covered in the report's production-practices section).
+services:
+  mongo:
+    image: mongo:8.0
+    container_name: festflow-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      # Mounted read-only so we can run: docker exec -it festflow-mongo mongosh spectra /queries/<file>.js
+      - ./queries:/queries:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

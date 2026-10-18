@@ -1,0 +1,14 @@
+# Pinned to major versions: bug-fix releases are fine, breaking changes are not.
+Django>=5.2,<5.3          # 5.2 LTS — URLs, views, templates, forms, sessions, CSRF only (no ORM)
+pymongo>=4.10,<5          # sync driver; the ONLY way this project talks to MongoDB
+qrcode[pil]>=8,<9         # server-side QR codes for tickets
+Faker>=37,<38             # en_IN fake data for the seed command
+python-dotenv>=1,<2       # loads .env into os.environ
+
+# Tests
+pytest>=8,<9
+pytest-django>=4,<5
+
+# Optional ML (Phase 7) — uncomment when we get there
+# scikit-learn>=1.5,<2
+# joblib>=1.4,<2
