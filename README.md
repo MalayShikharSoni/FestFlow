@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 6 (tests)**. Remaining: optional ML (Phase 7) and docs (Phase 8).
+> Status: **Phase 7 (optional ML)**. Remaining: docs (Phase 8).
 
 ## Prerequisites
 
@@ -92,6 +92,19 @@ python manage.py explain_report                # writes docs/explain_results.md 
 mongosh spectra queries/04_indexes_explain.js  # the same before/after explain() in mongosh
 ```
 
+### Optional: no-show predictor (Phase 7)
+
+```bash
+python manage.py train_noshow    # features via the noshow_features aggregation -> LogisticRegression
+```
+
+Prints accuracy (next to the always-"shows up" baseline) and ROC-AUC on a held-out
+split, then saves `ml/artifacts/noshow.joblib` (gitignored). While that file exists
+the organizer dashboard shows predicted no-show % for upcoming events; delete it and
+the card disappears. Honest caveat: the data is synthetic and the seed decides
+no-shows from these same signals, so the model mostly relearns what the seed
+injected. It demonstrates MongoDB -> features -> model, not a real-world finding.
+
 The fest is placed relative to today: days 1-3 are the three previous days
 (completed, with check-ins), today is a break, days 4-5 are the next two days
 (scheduled, bookable). Re-seed on another day and the fest moves with you.
@@ -105,7 +118,7 @@ Demo logins (password `Spectra@2026`): `organizer@spectra.test`,
 ## Tests
 
 ```bash
-python -m pytest            # ~130 tests, ~20 s; needs MongoDB running
+python -m pytest            # ~135 tests, ~20 s; needs MongoDB running
 ```
 
 Tests run against `MONGO_TEST_DB_NAME` (`spectra_test`), which is dropped at the

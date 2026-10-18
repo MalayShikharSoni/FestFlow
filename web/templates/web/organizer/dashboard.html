@@ -105,6 +105,34 @@
     </div></div>
   </div>
 
+  {% if noshow_forecast %}
+  <div class="col-12">
+    <div class="card"><div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-baseline">
+        <h2 class="h6 mb-1">Predicted no-shows for upcoming events</h2>
+        <div class="small text-secondary-ink">Logistic regression · ROC-AUC {{ noshow_forecast.metrics.rocAuc }} on {{ noshow_forecast.metrics.test }} held-out bookings · trained {{ noshow_forecast.trained_at|date:"d M H:i" }}</div>
+      </div>
+      <p class="small text-secondary-ink">Features from the <a href="{% url 'query_lab' %}?name=noshow_features">noshow_features</a> pipeline; the user's history comes from <code>$setWindowFields</code> over earlier bookings.</p>
+      <div class="table-responsive">
+        <table class="table table-sm tabular align-middle mb-2">
+          <thead><tr><th>Event</th><th class="text-end">Tickets sold</th><th class="text-end">Expected no-shows</th><th style="width: 30%">Predicted no-show %</th></tr></thead>
+          <tbody>
+            {% for e in noshow_forecast.events %}
+              <tr>
+                <td class="small">{{ e.startTime|date:"d M H:i" }} · {{ e.title }} <span class="badge type-{{ e.type }}">{{ e.type|nice }}</span></td>
+                <td class="text-end">{{ e.tickets }}</td>
+                <td class="text-end">{{ e.expectedNoShows }}</td>
+                <td><div class="d-flex align-items-center gap-2"><div class="meter flex-grow-1"><span style="width: {{ e.noShowPct }}%"></span></div><span>{{ e.noShowPct }}%</span></div></td>
+              </tr>
+            {% empty %}<tr><td colspan="4" class="text-secondary-ink">No bookings for upcoming events yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-secondary-ink mb-0">Honest caveat: the data is synthetic and the seed decides no-shows from these same signals, so the model mostly relearns what the seed injected. It demonstrates MongoDB &rarr; features &rarr; model, not a real-world finding.</p>
+    </div></div>
+  </div>
+  {% endif %}
+
   {# Occupancy is a ratio against a limit: meters, not a chart #}
   <div class="col-12 col-lg-6">
     <div class="card h-100"><div class="card-body">

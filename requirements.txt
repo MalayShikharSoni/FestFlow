@@ -9,6 +9,7 @@ python-dotenv>=1,<2       # loads .env into os.environ
 pytest>=8,<9
 pytest-django>=4,<5
 
-# Optional ML (Phase 7) — uncomment when we get there
-# scikit-learn>=1.5,<2
-# joblib>=1.4,<2
+# Optional ML (Phase 7): the no-show predictor. The app runs without these;
+# the dashboard simply hides the prediction card.
+scikit-learn>=1.5,<2
+joblib>=1.4,<2

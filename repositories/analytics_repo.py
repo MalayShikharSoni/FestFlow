@@ -561,6 +561,92 @@ def organizer_dashboard() -> dict[str, Any]:
             "paymentModes": row["paymentModes"]}
 
 
+# --- 12. noshow_features (MongoDB for predictive analytics) --------------------
+def noshow_features_pipeline() -> Pipeline:
+    """Question: for every confirmed booking, what do we know that might predict a no-show?
+
+    One row per confirmed booking of a completed or scheduled event. The database
+    does the feature engineering; Python only turns rows into a matrix.
+    $match/$project   completed + scheduled events, keeping type/status/startTime
+    $lookup           their confirmed bookings via the eventId index
+    $unwind           one document per booking
+    $set              label + per-booking features:
+                        noShow      1 if NO ticket was scanned (completed events only;
+                                    null for scheduled ones — they have not happened)
+                        leadDays    hours between booking and start / 24 (continuous)
+                        ticketPrice, ticketCount, eventType,
+                        eventHour   start hour in IST ($hour with a timezone)
+    $setWindowFields  per user, ordered by event start, over the window of all
+                      EARLIER rows (documents: ["unbounded", -1]): how many past
+                      completed bookings, and how many were no-shows. Excluding the
+                      current row means the label never leaks into its own features.
+    $project          final feature columns (pastNoShowRate is null with no history)
+    $sort             stable order (event start, then booking id)
+    """
+    return [
+        {"$match": {"status": {"$in": ["completed", "scheduled"]}}},
+        {"$project": {"type": 1, "status": 1, "startTime": 1}},
+        {"$lookup": {
+            "from": "bookings",
+            "localField": "_id",
+            "foreignField": "eventId",
+            "pipeline": [
+                {"$match": {"status": "confirmed"}},
+                {"$project": {"userId": 1, "bookedAt": 1, "tickets": 1}},
+            ],
+            "as": "booking",
+        }},
+        {"$unwind": "$booking"},
+        {"$set": {
+            "completed": {"$eq": ["$status", "completed"]},
+            "anyScanned": {"$anyElementTrue": [{"$map": {
+                "input": "$booking.tickets", "as": "t", "in": {"$ne": ["$$t.checkedInAt", None]},
+            }}]},
+        }},
+        {"$set": {
+            "noShow": {"$cond": ["$completed", {"$cond": ["$anyScanned", 0, 1]}, None]},
+            "pastWeight": {"$cond": ["$completed", 1, 0]},
+            "leadDays": {"$round": [{"$divide": [
+                {"$dateDiff": {"startDate": "$booking.bookedAt", "endDate": "$startTime", "unit": "hour"}}, 24]}, 2]},
+            "ticketPrice": {"$arrayElemAt": ["$booking.tickets.price", 0]},
+            "ticketCount": {"$size": "$booking.tickets"},
+            "eventHour": {"$hour": {"date": "$startTime", "timezone": IST}},
+        }},
+        {"$setWindowFields": {
+            "partitionBy": "$booking.userId",
+            "sortBy": {"startTime": 1},
+            "output": {
+                "pastBookings": {"$sum": "$pastWeight", "window": {"documents": ["unbounded", -1]}},
+                "pastNoShows": {"$sum": "$noShow", "window": {"documents": ["unbounded", -1]}},
+            },
+        }},
+        {"$project": {
+            "_id": 0,
+            "bookingId": "$booking._id",
+            "eventId": "$_id",
+            "userId": "$booking.userId",
+            "eventStatus": "$status",
+            "noShow": 1,
+            "leadDays": 1,
+            "ticketPrice": 1,
+            "ticketCount": 1,
+            "eventType": "$type",
+            "eventHour": 1,
+            "pastBookings": 1,
+            "pastNoShowRate": {"$cond": [
+                {"$gt": ["$pastBookings", 0]},
+                {"$round": [{"$divide": ["$pastNoShows", "$pastBookings"]}, 3]},
+                None,
+            ]},
+        }},
+        {"$sort": {"eventId": 1, "bookingId": 1}},
+    ]
+
+
+def noshow_features() -> list[dict[str, Any]]:
+    return run_pipeline("events", noshow_features_pipeline())
+
+
 # --- Registry for the Query Lab ------------------------------------------------
 @dataclass(frozen=True)
 class NamedPipeline:
@@ -591,6 +677,8 @@ NAMED_PIPELINES: dict[str, NamedPipeline] = {p.name: p for p in [
                   daily_sales_with_moving_avg_pipeline),
     NamedPipeline("organizer_dashboard", "bookings", "All dashboard numbers in one $facet",
                   organizer_dashboard_pipeline),
+    NamedPipeline("noshow_features", "events", "ML features per booking (no-show predictor)",
+                  noshow_features_pipeline),
 ]}
 
 

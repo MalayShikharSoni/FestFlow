@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 
 from core.exceptions import NotFoundError, RuleViolation
 from core.serializers import parse_ejson, to_ejson
+from ml import noshow
 from repositories import analytics_repo
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -80,6 +81,8 @@ def dashboard() -> dict[str, Any]:
         "lead": lead,
         "revenue_rows": top_revenue,
         "as_of": analytics_repo.latest_activity(),
+        # None (card hidden) until `manage.py train_noshow` has saved a model.
+        "noshow_forecast": noshow.forecast_upcoming(),
     }
 
 

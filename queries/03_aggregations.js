@@ -295,6 +295,68 @@ const organizer_dashboard = [
   { $project: { kpis: { $first: "$kpis" }, salesByDay: 1, topEvents: 1, paymentModes: 1 } },
 ];
 
+// 12. ML features per confirmed booking (Phase 7 no-show predictor). The user's history
+// comes from a $setWindowFields window over all EARLIER rows (["unbounded", -1]),
+// so a booking's own label never leaks into its features.
+const noshow_features = [
+  { $match: { status: { $in: ["completed", "scheduled"] } } },
+  { $project: { type: 1, status: 1, startTime: 1 } },
+  { $lookup: {
+    from: "bookings",
+    localField: "_id",
+    foreignField: "eventId",
+    pipeline: [
+      { $match: { status: "confirmed" } },
+      { $project: { userId: 1, bookedAt: 1, tickets: 1 } },
+    ],
+    as: "booking",
+  } },
+  { $unwind: "$booking" },
+  { $set: {
+    completed: { $eq: ["$status", "completed"] },
+    anyScanned: { $anyElementTrue: [{ $map: {
+      input: "$booking.tickets", as: "t", in: { $ne: ["$$t.checkedInAt", null] },
+    } }] },
+  } },
+  { $set: {
+    noShow: { $cond: ["$completed", { $cond: ["$anyScanned", 0, 1] }, null] },
+    pastWeight: { $cond: ["$completed", 1, 0] },
+    leadDays: { $round: [{ $divide: [
+      { $dateDiff: { startDate: "$booking.bookedAt", endDate: "$startTime", unit: "hour" } }, 24] }, 2] },
+    ticketPrice: { $arrayElemAt: ["$booking.tickets.price", 0] },
+    ticketCount: { $size: "$booking.tickets" },
+    eventHour: { $hour: { date: "$startTime", timezone: IST } },
+  } },
+  { $setWindowFields: {
+    partitionBy: "$booking.userId",
+    sortBy: { startTime: 1 },
+    output: {
+      pastBookings: { $sum: "$pastWeight", window: { documents: ["unbounded", -1] } },
+      pastNoShows: { $sum: "$noShow", window: { documents: ["unbounded", -1] } },
+    },
+  } },
+  { $project: {
+    _id: 0,
+    bookingId: "$booking._id",
+    eventId: "$_id",
+    userId: "$booking.userId",
+    eventStatus: "$status",
+    noShow: 1,
+    leadDays: 1,
+    ticketPrice: 1,
+    ticketCount: 1,
+    eventType: "$type",
+    eventHour: 1,
+    pastBookings: 1,
+    pastNoShowRate: { $cond: [
+      { $gt: ["$pastBookings", 0] },
+      { $round: [{ $divide: ["$pastNoShows", "$pastBookings"] }, 3] },
+      null,
+    ] },
+  } },
+  { $sort: { eventId: 1, bookingId: 1 } },
+];
+
 // --- Run them all -------------------------------------------------------------
 const PIPELINES = [
   ["revenue_by_event_and_tier", "bookings", revenue_by_event_and_tier],
@@ -309,6 +371,7 @@ const PIPELINES = [
   ["cancellation_rate_by_event_type", "bookings", cancellation_rate_by_event_type],
   ["daily_sales_with_moving_avg", "bookings", daily_sales_with_moving_avg],
   ["organizer_dashboard", "bookings", organizer_dashboard],
+  ["noshow_features", "events", noshow_features],
 ];
 
 const PARITY = typeof process !== "undefined" && process.env.FESTFLOW_PARITY === "1";
