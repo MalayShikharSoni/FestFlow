@@ -66,7 +66,9 @@ const occupancy_per_tier = [
 // 3. Gate check-ins per IST hour. Set CHECKIN_EVENT_ID to an ObjectId to filter one event.
 const CHECKIN_EVENT_ID = null;
 function checkin_traffic_by_hour(eventId = CHECKIN_EVENT_ID) {
-  const firstMatch = { "tickets.checkedInAt": { $ne: null } };
+  // $elemMatch = "some ticket was scanned". {"tickets.checkedInAt": {$ne: null}} would mean
+  // "NO ticket is null" on an array and silently drop groups where one person did not come.
+  const firstMatch = { tickets: { $elemMatch: { checkedInAt: { $ne: null } } } };
   if (eventId !== null) firstMatch.eventId = eventId;
   return [
     { $match: firstMatch },

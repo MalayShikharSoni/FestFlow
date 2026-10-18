@@ -4,7 +4,10 @@ from django.contrib.auth.hashers import check_password, make_password
 
 
 def test_no_relational_database_configured() -> None:
-    assert settings.DATABASES in ({}, {"default": {"ENGINE": "django.db.backends.dummy"}})
+    # DATABASES = {} in settings; once anything touches django.db.connections, Django
+    # fills in a "default" entry that uses the dummy backend (which refuses every query).
+    engine = settings.DATABASES.get("default", {}).get("ENGINE", "django.db.backends.dummy")
+    assert engine == "django.db.backends.dummy"
 
 
 def test_auth_app_not_installed() -> None:

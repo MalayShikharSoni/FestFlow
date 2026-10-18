@@ -158,7 +158,11 @@ def checkin_traffic_by_hour_pipeline(event_id: ObjectId | None = None) -> Pipeli
     """Question: how many people came through the gates in each hour (IST)?
 
     $match    (first, so it can use an index) bookings that have at least one
-              check-in, optionally for one event only
+              check-in, optionally for one event only. $elemMatch means "some
+              ticket has checkedInAt != null". The tempting
+              {"tickets.checkedInAt": {"$ne": null}} is WRONG on an array: it means
+              "NO ticket is null", silently dropping groups where one person
+              did not turn up.
     $unwind   one document per ticket
     $match    keep only tickets that were actually scanned
     $group    by $dateTrunc to the hour IN IST — without the timezone, hours
@@ -166,7 +170,7 @@ def checkin_traffic_by_hour_pipeline(event_id: ObjectId | None = None) -> Pipeli
     $sort     chronological
     $project  readable label
     """
-    first_match: dict[str, Any] = {"tickets.checkedInAt": {"$ne": None}}
+    first_match: dict[str, Any] = {"tickets": {"$elemMatch": {"checkedInAt": {"$ne": None}}}}
     if event_id is not None:
         first_match["eventId"] = event_id
     return [
@@ -551,8 +555,10 @@ def organizer_dashboard_pipeline() -> Pipeline:
 
 
 def organizer_dashboard() -> dict[str, Any]:
-    rows = run_pipeline("bookings", organizer_dashboard_pipeline())
-    return rows[0] if rows else {"kpis": None, "salesByDay": [], "topEvents": [], "paymentModes": []}
+    row = run_pipeline("bookings", organizer_dashboard_pipeline())[0]
+    # With no bookings, the kpis facet is empty and $first of [] is "missing", so the key is absent.
+    return {"kpis": row.get("kpis"), "salesByDay": row["salesByDay"], "topEvents": row["topEvents"],
+            "paymentModes": row["paymentModes"]}
 
 
 # --- Registry for the Query Lab ------------------------------------------------

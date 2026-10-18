@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 5 (web UI)**. Later phases add tests and docs.
+> Status: **Phase 6 (tests)**. Remaining: optional ML (Phase 7) and docs (Phase 8).
 
 ## Prerequisites
 
@@ -105,8 +105,22 @@ Demo logins (password `Spectra@2026`): `organizer@spectra.test`,
 ## Tests
 
 ```bash
-python -m pytest
+python -m pytest            # ~130 tests, ~20 s; needs MongoDB running
 ```
+
+Tests run against `MONGO_TEST_DB_NAME` (`spectra_test`), which is dropped at the
+start and end of the session; your `spectra` data is never touched. Highlights:
+
+| File | What it proves |
+|---|---|
+| `test_validators.py` | 25 invalid writes rejected by MongoDB itself (WriteError 121), incl. an `$inc` past capacity |
+| `test_booking.py` | 50 threads vs 10 seats -> exactly 10 bookings; compensation; cancellation rules |
+| `test_checkin.py` | double scans (even 20 at once) count once; cancelled bookings refused |
+| `test_aggregations.py` | every pipeline against a hand-built fixture with paper-checkable numbers |
+| `test_services.py` / `test_unique.py` | cross-document rules; unique email / ticket code / slug |
+| `test_query_lab.py` / `test_web.py` | read-only Query Lab guards; end-to-end web flows |
+| `test_parity.py` | `queries/*.js` produce the same validators and identical aggregation results as Python (skipped if `mongosh` is not on PATH) |
+| `test_verify_and_seed.py` | seeded data passes every invariant; planted faults are caught; the mongosh demo scripts run cleanly |
 
 ## Project layout
 
