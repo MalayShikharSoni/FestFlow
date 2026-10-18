@@ -1,0 +1,68 @@
+/* FestFlow — small additions on top of Bootstrap 5.3. Chart colours come from the
+   validated reference palette (dataviz skill): series-1 blue, series-2 orange. */
+:root {
+  --ff-surface: #fcfcfb;
+  --ff-page: #f9f9f7;
+  --ff-ink: #0b0b0b;
+  --ff-ink-2: #52514e;
+  --ff-muted: #898781;
+  --ff-grid: #e1e0d9;
+  --ff-axis: #c3c2b7;
+  --ff-series-1: #2a78d6;
+  --ff-series-2: #eb6834;
+  --ff-track: #cde2fb;           /* lighter step of the same blue ramp: meter track */
+  --ff-good: #0ca30c;
+  --ff-warning: #fab219;
+  --ff-critical: #d03b3b;
+  --ff-ring: rgba(11, 11, 11, 0.10);
+}
+
+body {
+  background: var(--ff-page);
+  color: var(--ff-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.card { border: 1px solid var(--ff-ring); box-shadow: none; }
+.text-secondary-ink { color: var(--ff-ink-2) !important; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Event cards */
+.event-card .badge { font-weight: 500; }
+.type-pro_show { background: #e7f0fb; color: #1c5cab; }
+.type-cultural { background: #fdeee6; color: #9a3a12; }
+.type-workshop { background: #e6f6ef; color: #0f6b4a; }
+
+/* Meter: fill + lighter step of the same ramp as the track */
+.meter { height: 8px; background: var(--ff-track); border-radius: 4px; overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--ff-series-1); border-radius: 4px; }
+.meter.full > span { background: var(--ff-critical); }
+
+/* Stat tiles */
+.stat-label { color: var(--ff-ink-2); font-size: .875rem; }
+.stat-value { font-size: 1.75rem; font-weight: 600; line-height: 1.2; }
+.hero-value { font-size: 3rem; font-weight: 600; line-height: 1.1; }
+
+/* Charts */
+.chart-box { position: relative; height: 280px; }
+.chart-box.tall { height: 380px; }
+.legend-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+.legend-line { display: inline-block; width: 16px; height: 2px; vertical-align: 3px; }
+details.data-table summary { color: var(--ff-ink-2); font-size: .875rem; cursor: pointer; }
+
+/* Check-in result */
+.checkin-result { border-left: 8px solid; }
+.checkin-result.success { border-color: var(--ff-good); background: #eaf7ea; }
+.checkin-result.warning { border-color: var(--ff-warning); background: #fff6e0; }
+.checkin-result.danger { border-color: var(--ff-critical); background: #fbeaea; }
+
+/* Query Lab */
+.lab-json { max-height: 520px; overflow: auto; background: #f4f4f1; border-radius: .375rem; font-size: .8rem; }
+.lab-table { font-size: .8rem; }
+.lab-table th, .lab-table td { white-space: nowrap; font-family: var(--bs-font-monospace); }
+
+/* Tickets */
+.ticket-stub { border: 2px dashed var(--ff-axis); border-radius: .75rem; background: #fff; }
+.ticket-stub img { width: 148px; height: 148px; image-rendering: pixelated; }
+.ticket-code { font-family: var(--bs-font-monospace); letter-spacing: .08em; font-size: 1.1rem; }
+@media print { nav, .no-print { display: none !important; } }

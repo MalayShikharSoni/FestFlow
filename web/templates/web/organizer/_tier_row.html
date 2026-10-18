@@ -1,0 +1,14 @@
+<div class="tier-row border rounded p-2 mb-2 bg-light">
+  {% for hidden in tier.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if tier.non_field_errors %}<div class="text-danger small">{{ tier.non_field_errors }}</div>{% endif %}
+  <div class="row g-2">
+    <div class="col-4">{% include "web/_field.html" with field=tier.tier_id wrapper_class="mb-0" %}</div>
+    <div class="col-8">{% include "web/_field.html" with field=tier.name wrapper_class="mb-0" %}</div>
+    <div class="col-4">{% include "web/_field.html" with field=tier.section wrapper_class="mb-0" %}</div>
+    <div class="col-4">{% include "web/_field.html" with field=tier.price wrapper_class="mb-0" %}</div>
+    <div class="col-4">{% include "web/_field.html" with field=tier.capacity wrapper_class="mb-0" %}</div>
+    <div class="col-12">
+      <div class="form-check">{{ tier.DELETE }} <label class="form-check-label small" for="{{ tier.DELETE.id_for_label }}">Remove this tier (only if unsold)</label></div>
+    </div>
+  </div>
+</div>

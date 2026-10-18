@@ -192,14 +192,17 @@ def create_event(data: EventInput) -> dict[str, Any]:
         "createdAt": now,
         "updatedAt": now,
     }
-    # Only the fields of this event type are added; the validator's oneOf
-    # rejects anything that does not fit the type.
+    # Only the fields of this event type are added, and empty ones are left out,
+    # so the validator's oneOf reports a clear "missing artist" rather than a type error.
     if data.type == "workshop":
-        doc.update(seatLimit=data.seat_limit, seatsTaken=0, instructor=data.instructor,
-                   prerequisites=data.prerequisites)
+        doc.update(seatsTaken=0, prerequisites=data.prerequisites)
+        if data.seat_limit is not None:
+            doc["seatLimit"] = data.seat_limit
+        if data.instructor:
+            doc["instructor"] = data.instructor
     else:
         doc["ticketTiers"] = tiers
-        if data.type == "pro_show":
+        if data.type == "pro_show" and data.artist:
             doc["artist"] = data.artist
     return events_repo.get_event(_insert_with_unique_slug(doc))
 

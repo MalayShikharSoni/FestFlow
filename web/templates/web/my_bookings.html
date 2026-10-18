@@ -1,0 +1,26 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}My bookings{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">My bookings</h1>
+{% if bookings %}
+  <div class="list-group">
+    {% for b in bookings %}
+      <a class="list-group-item list-group-item-action" href="{% url 'ticket' b.id %}">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+          <div>
+            <strong>{{ b.event.title|default:"(event removed)" }}</strong>
+            <div class="small text-secondary-ink">{{ b.event.startTime|date:"D d M · H:i" }} · {{ b.tickets|length }} ticket{{ b.tickets|length|pluralize }} · booked {{ b.bookedAt|date:"d M H:i" }}</div>
+          </div>
+          <div class="text-end">
+            <span class="badge text-bg-{% if b.status == 'confirmed' %}success{% elif b.status == 'refunded' %}warning{% else %}secondary{% endif %}">{{ b.status|title }}</span>
+            <div class="small tabular">{% if b.totalAmount %}{{ b.totalAmount|inr }}{% else %}Free{% endif %}</div>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-light">No bookings yet. <a href="{% url 'event_list' %}">Browse events</a>.</div>
+{% endif %}
+{% endblock %}

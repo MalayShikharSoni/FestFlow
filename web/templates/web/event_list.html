@@ -1,0 +1,72 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}Events{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Spectra 2026</h1>
+    <p class="text-secondary-ink mb-0">Five days · {{ total }} event{{ total|pluralize }} {% if q %}matching “{{ q }}”{% endif %}</p>
+  </div>
+</div>
+
+<form class="row g-2 mb-4" method="get">
+  <div class="col-12 col-md-5">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search events, artists, tags…" aria-label="Search">
+  </div>
+  <div class="col-6 col-md-3">
+    <select class="form-select" name="type" aria-label="Type">
+      <option value="">All types</option>
+      {% for t in types %}<option value="{{ t }}" {% if t == selected_type %}selected{% endif %}>{{ t|nice }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-6 col-md-2">
+    <select class="form-select" name="day" aria-label="Day">
+      <option value="">All days</option>
+      {% for d in days %}<option value="{{ d.isoformat }}" {% if d == selected_day %}selected{% endif %}>Day {{ forloop.counter }} · {{ d|date:"D d M" }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary">Filter</button></div>
+  {% if q or selected_type or selected_day %}<div class="col-12"><a class="small" href="{% url 'event_list' %}">Clear filters</a></div>{% endif %}
+</form>
+
+<div class="row g-3">
+  {% for e in events %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <a class="card h-100 text-decoration-none text-reset event-card" href="{% url 'event_detail' e.id %}">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge type-{{ e.type }}">{{ e.type|nice }}</span>
+            {% if e.status == "completed" %}<span class="badge text-bg-light">Completed</span>
+            {% elif e.seatsLeft == 0 %}<span class="badge text-bg-danger">Sold out</span>{% endif %}
+          </div>
+          <h2 class="h5 card-title">{{ e.title }}</h2>
+          <p class="small text-secondary-ink mb-2">
+            {{ e.startTime|date:"D d M · H:i" }} · {{ e.venue.name }}
+            {% if e.artist %}<br>ft. {{ e.artist }}{% endif %}
+          </p>
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>{% if e.fromPrice == 0 %}Free{% if e.type != "workshop" %} &amp; up{% endif %}{% else %}From {{ e.fromPrice|inr }}{% endif %}</span>
+              <span class="tabular">{{ e.pct }}% {% if e.type == "workshop" %}registered{% else %}sold{% endif %}</span>
+            </div>
+            <div class="meter {% if e.seatsLeft == 0 %}full{% endif %}" role="img" aria-label="{{ e.pct }} percent taken"><span style="width: {{ e.pct }}%"></span></div>
+            {% if e.score %}<div class="small text-secondary-ink mt-2">Text score {{ e.score|floatformat:2 }}</div>{% endif %}
+          </div>
+        </div>
+      </a>
+    </div>
+  {% empty %}
+    <div class="col-12"><div class="alert alert-light">No events match. Try another search or day.</div></div>
+  {% endfor %}
+</div>
+
+{% if pages > 1 %}
+  <nav class="mt-4" aria-label="Pages">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="?{{ filters_qs }}{% if filters_qs %}&{% endif %}page={{ page|add:'-1' }}">Previous</a></li>
+      <li class="page-item disabled"><span class="page-link">Page {{ page }} of {{ pages }}</span></li>
+      <li class="page-item {% if page >= pages %}disabled{% endif %}"><a class="page-link" href="?{{ filters_qs }}{% if filters_qs %}&{% endif %}page={{ page|add:'1' }}">Next</a></li>
+    </ul>
+  </nav>
+{% endif %}
+{% endblock %}

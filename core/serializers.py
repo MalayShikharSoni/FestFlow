@@ -1,8 +1,11 @@
 """Helpers to turn MongoDB documents into template-friendly dicts."""
 from typing import Any
 
-from bson import ObjectId
+from bson import ObjectId, json_util
 from bson.errors import InvalidId
+from bson.json_util import JSONMode, JSONOptions
+
+RELAXED = JSONOptions(json_mode=JSONMode.RELAXED)
 
 
 def serialize(doc: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -33,3 +36,20 @@ def to_object_id(value: str | ObjectId) -> ObjectId | None:
         return ObjectId(value)
     except (InvalidId, TypeError):
         return None
+
+
+def to_ejson(value: Any, indent: int | None = None) -> str:
+    """Relaxed Extended JSON: like JSON, but ObjectIds and dates stay readable
+    ({"$oid": ...}, {"$date": ...}) — the same notation mongosh prints."""
+    return json_util.dumps(value, json_options=RELAXED, indent=indent, ensure_ascii=False)
+
+
+def parse_ejson(text: str) -> Any:
+    """Parse (Extended) JSON typed by a user, e.g. {"eventId": {"$oid": "..."}}.
+
+    Raises ValueError with a readable message if the text is not valid JSON.
+    """
+    try:
+        return json_util.loads(text)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Not valid JSON: {exc}") from exc

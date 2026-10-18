@@ -1,0 +1,73 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}Volunteers{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Volunteer shifts</h1>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card card-body">
+      <h2 class="h6">Assign a shift</h2>
+      <form method="post" novalidate>{% csrf_token %}
+        {% include "web/_form_errors.html" %}
+        {% include "web/_field.html" with field=form.volunteer %}
+        {% include "web/_field.html" with field=form.event %}
+        {% include "web/_field.html" with field=form.duty %}
+        <div class="row">
+          <div class="col-6">{% include "web/_field.html" with field=form.start %}</div>
+          <div class="col-6">{% include "web/_field.html" with field=form.end %}</div>
+        </div>
+        <button class="btn btn-primary">Assign</button>
+      </form>
+      <p class="small text-secondary-ink mt-3 mb-0">The shift must lie inside the event; overlap with the volunteer's other shifts is refused atomically by the <code>$push</code> filter.</p>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card card-body mb-3">
+      <h2 class="h6 mb-1">Coverage per event</h2>
+      <p class="small text-secondary-ink">Two $group stages, then $arrayToObject turns duties into columns</p>
+      <div class="table-responsive">
+        <table class="table table-sm tabular mb-0">
+          <thead><tr><th>Event</th>{% for d in duties %}<th class="text-end">{{ d|nice }}</th>{% endfor %}<th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for row in coverage %}
+              <tr><td class="small">{{ row.startTime|date:"d M H:i" }} · {{ row.title }}</td>
+                {% for d in duties %}<td class="text-end">{{ row.byDuty|get_item:d }}</td>{% endfor %}
+                <td class="text-end"><strong>{{ row.total }}</strong></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card card-body">
+      <h2 class="h6">Volunteers ({{ volunteers|length }})</h2>
+      <div class="table-responsive" style="max-height: 560px">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Volunteer</th><th class="text-end">Hours</th><th>Shifts</th></tr></thead>
+          <tbody>
+            {% for v in volunteers %}
+              <tr>
+                <td class="small">{{ v.name }}<div class="text-secondary-ink">{{ v.email }}</div></td>
+                <td class="text-end tabular">{{ v.hours }}</td>
+                <td class="small">
+                  {% for s in v.shifts %}
+                    <div class="d-flex justify-content-between align-items-center gap-2 border-bottom py-1">
+                      <span>{{ s.start|date:"d M H:i" }}–{{ s.end|date:"H:i" }} · {{ s.duty|nice }} · {{ s.eventTitle }}</span>
+                      <form method="post" action="{% url 'shift_remove' v.id %}">{% csrf_token %}
+                        <input type="hidden" name="event_id" value="{{ s.eventIdStr }}">
+                        <input type="hidden" name="start" value="{{ s.start.isoformat }}">
+                        <button class="btn btn-sm btn-link text-danger p-0" title="Remove shift">remove</button>
+                      </form>
+                    </div>
+                  {% empty %}<span class="text-secondary-ink">No shifts</span>{% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

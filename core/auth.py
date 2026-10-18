@@ -12,6 +12,7 @@ from typing import Any, Callable
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
+from django.utils.functional import SimpleLazyObject
 
 SESSION_USER_ID = "user_id"
 SESSION_ROLE = "role"
@@ -75,6 +76,19 @@ def role_required(*roles: str) -> Callable[[ViewFunc], ViewFunc]:
 def current_user(request: HttpRequest) -> dict[str, Any]:
     """Template context processor: exposes {{ current_user }} on every page.
 
-    Replaces django.contrib.auth's `user` context processor.
+    Replaces django.contrib.auth's `user` context processor. The session holds
+    only id and role; the name is looked up LAZILY (SimpleLazyObject), i.e. only
+    on pages whose template actually uses {{ current_user.name }}.
     """
-    return {"current_user": get_session_user(request)}
+    session_user = get_session_user(request)
+    if session_user is None:
+        return {"current_user": None}
+
+    def load() -> dict[str, Any]:
+        from bson import ObjectId
+
+        from services.auth_service import get_user  # imported here: core must not depend on services at import time
+        user = get_user(ObjectId(session_user["id"])) or {}
+        return {**session_user, "name": user.get("name", ""), "email": user.get("email", "")}
+
+    return {"current_user": SimpleLazyObject(load)}

@@ -14,8 +14,10 @@ from datetime import datetime
 from typing import Any, Callable
 
 from bson import ObjectId
+from pymongo.errors import OperationFailure
 
 from core.db import get_db
+from core.exceptions import QueryFailed
 
 Pipeline = list[dict[str, Any]]
 IST = "Asia/Kolkata"
@@ -44,6 +46,23 @@ def run_pipeline(collection: str, pipeline: Pipeline, limit: int | None = None) 
         rows.append(_plain(doc))
     cursor.close()
     return rows
+
+
+def run_untrusted_pipeline(collection: str, pipeline: Pipeline, limit: int) -> list[dict[str, Any]]:
+    """Run a Query Lab pipeline typed by an organizer (already checked by analytics_service).
+
+    A {$limit: limit + 1} is appended so the server stops early and we can tell
+    whether the result was cut off. Server errors (bad operator, timeout after
+    maxTimeMS, ...) become QueryFailed carrying MongoDB's message verbatim.
+    Results are NOT passed through _plain(): the lab shows raw Extended JSON.
+    """
+    try:
+        cursor = get_db()[collection].aggregate(pipeline + [{"$limit": limit + 1}], maxTimeMS=MAX_TIME_MS)
+        return list(cursor)
+    except OperationFailure as exc:
+        message = (exc.details or {}).get("errmsg", str(exc))
+        code_name = (exc.details or {}).get("codeName", "")
+        raise QueryFailed(f"MongoDB error {exc.code} {code_name}: {message}") from exc
 
 
 def _confirmed_tickets() -> dict[str, Any]:

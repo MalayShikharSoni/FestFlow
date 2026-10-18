@@ -1,0 +1,84 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<a class="small" href="{% url 'event_list' %}">&larr; All events</a>
+<div class="row g-4 mt-1">
+  <div class="col-lg-7">
+    <span class="badge type-{{ event.type }} mb-2">{{ event.type|nice }}</span>
+    {% if event.status != "scheduled" %}<span class="badge text-bg-{% if event.status == 'cancelled' %}danger{% else %}secondary{% endif %} mb-2">{{ event.status|title }}</span>{% endif %}
+    <h1 class="h2">{{ event.title }}</h1>
+    {% if event.artist %}<p class="lead mb-1">ft. {{ event.artist }}</p>{% endif %}
+    <p class="text-secondary-ink">{{ event.startTime|date:"l, d F Y · H:i" }}–{{ event.endTime|date:"H:i" }} IST</p>
+    <p>{{ event.description }}</p>
+    {% if event.tags %}<p>{% for tag in event.tags %}<span class="badge text-bg-light border me-1">#{{ tag }}</span>{% endfor %}</p>{% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6">Venue</h2>
+        <p class="mb-1"><strong>{{ event.venue.name }}</strong> · {{ event.venue.block }}</p>
+        <p class="small text-secondary-ink mb-1">Sections: {% for s in event.venue.sections %}{{ s.name }} ({{ s.capacity }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+        <p class="small text-secondary-ink mb-0">Facilities: {% for f in event.venue.facilities %}{{ f|nice }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+      </div>
+    </div>
+
+    {% if event.type == "workshop" %}
+      <div class="card"><div class="card-body">
+        <h2 class="h6">Workshop</h2>
+        <p class="mb-1">Instructor: <strong>{{ event.instructor }}</strong></p>
+        <p class="mb-2 small">Bring: {{ event.prerequisites|join:", " }}</p>
+        <div class="d-flex justify-content-between small mb-1"><span>{{ event.seatsTaken }} of {{ event.seatLimit }} seats taken</span><span>{{ event.seatsLeft }} left</span></div>
+        <div class="meter {% if event.seatsLeft == 0 %}full{% endif %}"><span style="width: {{ event.pct }}%"></span></div>
+      </div></div>
+    {% else %}
+      <h2 class="h5 mt-4">Tickets</h2>
+      <div class="list-group">
+        {% for t in event.ticketTiers %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+              <div><strong>{{ t.name }}</strong> <span class="small text-secondary-ink">· {{ t.section }} · {{ t.tierId }}</span></div>
+              <div class="tabular">{% if t.price == 0 %}Free{% else %}{{ t.price|inr }}{% endif %}</div>
+            </div>
+            <div class="d-flex justify-content-between small text-secondary-ink mt-1 mb-1">
+              <span>{{ t.sold }} / {{ t.capacity }} sold</span>
+              <span>{% if t.left == 0 %}<strong class="text-danger">Sold out</strong>{% else %}{{ t.left }} left{% endif %}</span>
+            </div>
+            <div class="meter {% if t.left == 0 %}full{% endif %}" role="img" aria-label="{{ t.pct }} percent sold"><span style="width: {{ t.pct }}%"></span></div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card position-sticky" style="top: 1rem">
+      <div class="card-body">
+        <h2 class="h5">{% if event.type == "workshop" %}Register{% else %}Book tickets{% endif %}</h2>
+        {% if event.status != "scheduled" %}
+          <p class="text-secondary-ink mb-0">Bookings are closed — this event is {{ event.status }}.</p>
+        {% elif not form %}
+          <p class="mb-2">Log in to book.</p>
+          <a class="btn btn-primary" href="{% url 'login' %}?next={{ request.path|urlencode }}">Log in</a>
+          <a class="btn btn-outline-secondary" href="{% url 'register' %}">Sign up</a>
+        {% elif event.seatsLeft == 0 %}
+          <p class="text-danger mb-0">Sold out.</p>
+        {% else %}
+          <form method="post" action="{% url 'book' event.id %}">{% csrf_token %}
+            {% include "web/_form_errors.html" %}
+            {% if event.type == "workshop" %}
+              <p class="small text-secondary-ink">Free registration · one seat per person.</p>
+            {% else %}
+              {% include "web/_field.html" with field=form.tier %}
+              <div class="row">
+                <div class="col-5">{% include "web/_field.html" with field=form.qty %}</div>
+                <div class="col-7">{% include "web/_field.html" with field=form.payment_mode %}</div>
+              </div>
+            {% endif %}
+            <button class="btn btn-primary w-100">{% if event.type == "workshop" %}Register{% else %}Book now{% endif %}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

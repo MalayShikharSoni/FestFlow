@@ -1,0 +1,22 @@
+{# Renders one Bootstrap form field with label, help text and errors. Usage: include "web/_field.html" with field=form.x #}
+<div class="mb-3 {% if wrapper_class %}{{ wrapper_class }}{% endif %}">
+  {% if field.field.widget.input_type == "checkbox" and not field.field.widget.allow_multiple_selected %}
+    <div class="form-check">
+      {{ field }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    </div>
+  {% elif field.field.widget.input_type == "radio" or field.field.widget.allow_multiple_selected %}
+    <label class="form-label d-block">{{ field.label }}</label>
+    {% for choice in field %}
+      <div class="form-check {% if field.field.widget.allow_multiple_selected %}form-check-inline{% endif %}">
+        {{ choice.tag }}
+        <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+      </div>
+    {% endfor %}
+  {% else %}
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+  {% endif %}
+  {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+  {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+</div>

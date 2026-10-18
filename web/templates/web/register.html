@@ -1,0 +1,21 @@
+{% extends "web/base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-5">
+    <h1 class="h3 mb-3">Create your account</h1>
+    <form method="post" class="card card-body" novalidate>{% csrf_token %}
+      {% include "web/_form_errors.html" %}
+      {% include "web/_field.html" with field=form.name %}
+      {% include "web/_field.html" with field=form.email %}
+      {% include "web/_field.html" with field=form.phone %}
+      {% include "web/_field.html" with field=form.college %}
+      {% include "web/_field.html" with field=form.reg_no %}
+      {% include "web/_field.html" with field=form.password %}
+      {% include "web/_field.html" with field=form.password2 %}
+      <button class="btn btn-primary">Sign up</button>
+      <p class="small text-secondary-ink mt-3 mb-0">Already registered? <a href="{% url 'login' %}">Log in</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

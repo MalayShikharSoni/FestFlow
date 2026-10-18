@@ -20,14 +20,24 @@ from repositories import events_repo, users_repo
 def list_volunteers() -> list[dict[str, Any]]:
     """Volunteers with their shifts, each shift carrying its event title."""
     volunteers = users_repo.list_volunteers()
-    event_ids = list({s["eventId"] for v in volunteers for s in v["shifts"]})
-    events = events_repo.get_events_by_ids(event_ids)
-    for volunteer in volunteers:
-        for shift in volunteer["shifts"]:
-            event = events.get(shift["eventId"])
-            shift["eventTitle"] = event["title"] if event else "(deleted event)"
-            shift["eventIdStr"] = str(shift["eventId"])
+    _attach_event_titles([s for v in volunteers for s in v["shifts"]])
     return volunteers
+
+
+def shifts_for(user_id: ObjectId) -> list[dict[str, Any]]:
+    """One volunteer's own shifts, soonest first."""
+    user = users_repo.get_user(user_id)
+    shifts = sorted(user["shifts"], key=lambda s: s["start"]) if user else []
+    _attach_event_titles(shifts)
+    return shifts
+
+
+def _attach_event_titles(shifts: list[dict[str, Any]]) -> None:
+    events = events_repo.get_events_by_ids(list({s["eventId"] for s in shifts}))
+    for shift in shifts:
+        event = events.get(shift["eventId"])
+        shift["eventTitle"] = event["title"] if event else "(deleted event)"
+        shift["eventIdStr"] = str(shift["eventId"])
 
 
 def assign_shift(user_id: ObjectId, event_id: ObjectId, duty: str,

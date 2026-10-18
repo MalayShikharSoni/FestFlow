@@ -1,0 +1,20 @@
+{% extends "web/base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <h1 class="h3 mb-3">Log in</h1>
+    <form method="post" class="card card-body">{% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "web/_form_errors.html" %}
+      {% include "web/_field.html" with field=form.email %}
+      {% include "web/_field.html" with field=form.password %}
+      <button class="btn btn-primary">Log in</button>
+      <p class="small text-secondary-ink mt-3 mb-0">New here? <a href="{% url 'register' %}">Create an account</a></p>
+    </form>
+    <div class="small text-secondary-ink mt-3">
+      Demo logins (password <code>Spectra@2026</code>): <code>organizer@spectra.test</code>, <code>attendee@spectra.test</code>, <code>volunteer@spectra.test</code>
+    </div>
+  </div>
+</div>
+{% endblock %}

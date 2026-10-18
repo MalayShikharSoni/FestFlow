@@ -1,0 +1,22 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}My shifts{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">My shifts</h1>
+{% if shifts %}
+  <table class="table bg-white align-middle">
+    <thead><tr><th>When (IST)</th><th>Event</th><th>Duty</th></tr></thead>
+    <tbody>
+      {% for s in shifts %}
+        <tr>
+          <td class="tabular">{{ s.start|date:"D d M · H:i" }}–{{ s.end|date:"H:i" }}</td>
+          <td><a href="{% url 'event_detail' s.eventIdStr %}">{{ s.eventTitle }}</a></td>
+          <td>{{ s.duty|nice }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="alert alert-light">No shifts assigned yet.</div>
+{% endif %}
+{% endblock %}

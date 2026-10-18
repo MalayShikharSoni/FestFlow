@@ -36,6 +36,10 @@ class RuleViolation(FestFlowError):
     """A business rule enforced in services/ (one the validator cannot express) was broken."""
 
 
+class QueryFailed(FestFlowError):
+    """The server rejected a Query Lab pipeline; the message is MongoDB's own, verbatim."""
+
+
 class DuplicateError(FestFlowError):
     """A unique index rejected the write (code 11000), e.g. an email that is already registered."""
 

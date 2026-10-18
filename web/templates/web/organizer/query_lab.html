@@ -1,0 +1,51 @@
+{% extends "web/base.html" %}
+{% block title %}Query Lab{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Query Lab</h1>
+<p class="text-secondary-ink small">Run any named aggregation from the project, or write your own. Read-only: <code>$out</code>/<code>$merge</code> and stages off the allowlist are refused, no server-side JavaScript, <code>maxTimeMS</code> 5000, at most {{ max_rows }} rows. MongoDB errors are shown verbatim.</p>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+  <div class="col-md-9">
+    <label class="form-label" for="named">Named pipeline</label>
+    <select class="form-select font-monospace" id="named" name="name">
+      {% for p in pipelines %}
+        <option value="{{ p.name }}" {% if p.name == selected %}selected{% endif %}>{{ p.name }} — {{ p.question }} ({{ p.collection }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3 d-grid"><button class="btn btn-outline-primary">Show pipeline + results</button></div>
+</form>
+
+<form method="post" class="card card-body mb-3">{% csrf_token %}
+  <div class="row g-2 align-items-end">
+    <div class="col-sm-4">{% include "web/_field.html" with field=form.collection wrapper_class="mb-0" %}</div>
+    <div class="col-sm-8 text-sm-end"><button class="btn btn-primary">Run pipeline</button></div>
+  </div>
+  <div class="mt-2">{% include "web/_field.html" with field=form.pipeline wrapper_class="mb-0" %}</div>
+  <div class="form-text">Edit and re-run any pipeline. Extended JSON is accepted, e.g. <code>{"eventId": {"$oid": "..."}}</code> or <code>{"$date": "2026-10-20T00:00:00Z"}</code>.</div>
+</form>
+
+{% if error %}<div class="alert alert-danger font-monospace small" role="alert">{{ error }}</div>{% endif %}
+
+{% if result %}
+  <div class="d-flex flex-wrap justify-content-between align-items-baseline mb-2">
+    <h2 class="h5 mb-0">{% if result.name %}<span class="font-monospace">{{ result.name }}</span>{% else %}Custom pipeline{% endif %} <small class="text-secondary-ink">on {{ result.collection }}</small></h2>
+    <div class="small tabular">{{ result.rows|length }} row{{ result.rows|length|pluralize }}{% if result.truncated %} (capped at {{ max_rows }}){% endif %} · {{ result.millis }} ms</div>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <h3 class="h6">Pipeline</h3>
+      <pre class="lab-json p-2"><code>{{ result.pipeline_json }}</code></pre>
+    </div>
+    <div class="col-lg-8">
+      <h3 class="h6">Results</h3>
+      <div class="table-responsive border rounded bg-white" style="max-height: 520px">
+        <table class="table table-sm table-striped lab-table mb-0">
+          <thead class="sticky-top bg-white"><tr>{% for c in result.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in result.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% empty %}<tr><td class="text-secondary-ink">No documents.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "web/base.html" %}
+{% load festflow %}
+{% block title %}Tickets · {{ booking.event.title }}{% endblock %}
+{% block content %}
+<a class="small no-print" href="{% url 'my_bookings' %}">&larr; My bookings</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ booking.event.title }}</h1>
+    <p class="text-secondary-ink mb-0">{{ booking.event.startTime|date:"l d F · H:i" }} IST · {{ booking.venue.name }}</p>
+  </div>
+  <div class="text-end">
+    <span class="badge fs-6 text-bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'refunded' %}warning{% else %}secondary{% endif %}">{{ booking.status|title }}</span>
+    <div class="small text-secondary-ink mt-1">{{ booking.paymentMode }} · {% if booking.totalAmount %}{{ booking.totalAmount|inr }}{% else %}Free{% endif %}</div>
+  </div>
+</div>
+
+{% if booking.status != "confirmed" %}
+  <div class="alert alert-warning">This booking was {{ booking.status }} on {{ booking.cancelledAt|date:"d M Y H:i" }}. These tickets will not be admitted.</div>
+{% endif %}
+
+<div class="row g-3">
+  {% for t in booking.tickets %}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="ticket-stub p-3 text-center h-100">
+        <img src="{{ t.qr }}" alt="QR code for {{ t.code }}">
+        <div class="ticket-code mt-2">{{ t.code }}</div>
+        <div class="small text-secondary-ink">{% if t.tierId %}{{ t.tierId }} · {% endif %}{% if t.price %}{{ t.price|inr }}{% else %}Free{% endif %}</div>
+        {% if t.checkedInAt %}<div class="small text-success mt-1">Checked in {{ t.checkedInAt|date:"d M H:i" }}</div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="mt-4 no-print d-flex gap-2">
+  <button class="btn btn-outline-secondary" onclick="window.print()">Print</button>
+  {% if booking.status == "confirmed" %}
+    <form method="post" action="{% url 'cancel_booking' booking.id %}" onsubmit="return confirm('Cancel this booking?');">{% csrf_token %}
+      <button class="btn btn-outline-danger">Cancel booking</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

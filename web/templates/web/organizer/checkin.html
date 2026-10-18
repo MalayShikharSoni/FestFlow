@@ -1,0 +1,35 @@
+{% extends "web/base.html" %}
+{% block title %}Gate check-in{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="h3 mb-3">Gate check-in</h1>
+    <form method="post" class="d-flex gap-2 mb-4" autocomplete="off">{% csrf_token %}
+      {{ form.code }}
+      <button class="btn btn-primary btn-lg">Check in</button>
+    </form>
+
+    {% if result %}
+      <div class="card checkin-result {{ result.colour }}" role="status">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            <div class="display-6" aria-hidden="true">{% if result.outcome == "ok" %}&#10004;{% elif result.outcome == "already" %}&#9888;{% else %}&#10006;{% endif %}</div>
+            <div>
+              <div class="h4 mb-1">{% if result.outcome == "ok" %}Admit{% elif result.outcome == "already" %}Already used{% elif result.outcome == "cancelled" %}Booking cancelled{% else %}Invalid code{% endif %}</div>
+              <div>{{ result.message }}</div>
+            </div>
+          </div>
+          <hr>
+          <dl class="row mb-0 small">
+            <dt class="col-4">Code</dt><dd class="col-8 font-monospace">{{ result.code }}</dd>
+            {% if result.holder %}<dt class="col-4">Holder</dt><dd class="col-8">{{ result.holder }}</dd>{% endif %}
+            {% if result.event_title %}<dt class="col-4">Event</dt><dd class="col-8">{{ result.event_title }}</dd>{% endif %}
+            {% if result.checked_in_at %}<dt class="col-4">{% if result.outcome == "ok" %}Checked in{% else %}First scanned{% endif %}</dt><dd class="col-8">{{ result.checked_in_at|date:"d M Y H:i:s" }} IST</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+    {% endif %}
+    <p class="small text-secondary-ink mt-4">One atomic <code>find_one_and_update</code> matches only an unused ticket of a confirmed booking, so scanning the same code twice never counts twice. A USB/phone barcode scanner can type into the box directly.</p>
+  </div>
+</div>
+{% endblock %}

@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 4 (aggregations, indexing)**. Later phases add the UI, tests and docs.
+> Status: **Phase 5 (web UI)**. Later phases add tests and docs.
 
 ## Prerequisites
 
@@ -71,6 +71,17 @@ CRUD twins of every repository query, and an idempotent venue import (upsert by 
 mongosh spectra queries/02_crud.js             # runs every repository query; demo writes are cleaned up
 python manage.py import_venues data/sample_venues.json   # run twice: second run creates nothing
 ```
+
+### Using the web app
+
+`python manage.py runserver`, then open http://127.0.0.1:8000/
+
+| Who | Pages |
+|---|---|
+| Anyone | Event list (type/day filters, `$text` search, pagination), event detail, sign up, log in |
+| Attendee | Book tickets, My bookings, ticket page with QR codes, cancel |
+| Volunteer | My shifts |
+| Organizer | Dashboard (`$facet` KPIs + charts), events (create/edit with tier rows, cancel, delete), venues, gate check-in, volunteer shifts + coverage, **Query Lab** |
 
 ### Aggregations and indexes
 

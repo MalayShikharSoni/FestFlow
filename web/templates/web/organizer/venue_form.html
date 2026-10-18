@@ -1,0 +1,16 @@
+{% extends "web/base.html" %}
+{% block title %}{% if editing %}Edit venue{% else %}New venue{% endif %}{% endblock %}
+{% block content %}
+<a class="small" href="{% url 'organizer_venues' %}">&larr; Venues</a>
+<div class="row"><div class="col-lg-6">
+  <h1 class="h3 mt-2 mb-3">{% if editing %}Edit venue{% else %}New venue{% endif %}</h1>
+  <form method="post" class="card card-body" novalidate>{% csrf_token %}
+    {% include "web/_form_errors.html" %}
+    {% include "web/_field.html" with field=form.name %}
+    {% include "web/_field.html" with field=form.block %}
+    {% include "web/_field.html" with field=form.sections %}
+    {% include "web/_field.html" with field=form.facilities %}
+    <div><button class="btn btn-primary">Save</button></div>
+  </form>
+</div></div>
+{% endblock %}
