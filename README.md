@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 3 (repositories, services, CRUD)**. Later phases add aggregations, UI, tests and docs.
+> Status: **Phase 4 (aggregations, indexing)**. Later phases add the UI, tests and docs.
 
 ## Prerequisites
 
@@ -70,6 +70,15 @@ CRUD twins of every repository query, and an idempotent venue import (upsert by 
 ```bash
 mongosh spectra queries/02_crud.js             # runs every repository query; demo writes are cleaned up
 python manage.py import_venues data/sample_venues.json   # run twice: second run creates nothing
+```
+
+### Aggregations and indexes
+
+```bash
+mongosh spectra queries/03_aggregations.js     # all 11 analytics pipelines (+ volunteer coverage)
+python manage.py seed --reset --bookings 50000 # big dataset makes index effects obvious
+python manage.py explain_report                # writes docs/explain_results.md (drops/recreates indexes: dev only)
+mongosh spectra queries/04_indexes_explain.js  # the same before/after explain() in mongosh
 ```
 
 The fest is placed relative to today: days 1-3 are the three previous days

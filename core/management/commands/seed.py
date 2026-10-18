@@ -248,7 +248,8 @@ def build_users(rng: random.Random, fake: Faker, created_from: datetime, created
     for user in users:
         flaky = rng.uniform(0.15, 0.35) if rng.random() < 0.1 else rng.uniform(0.0, 0.08)
         # Pareto: most people book once or twice, a few book a lot (top spenders).
-        traits[user["_id"]] = UserTraits(activity=rng.paretovariate(1.8), flakiness=flaky)
+        # Capped at 8x, so the keenest fan books ~25 times rather than ~180.
+        traits[user["_id"]] = UserTraits(activity=min(rng.paretovariate(1.8), 8.0), flakiness=flaky)
     return users, traits
 
 
