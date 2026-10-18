@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 7 (optional ML)**. Remaining: docs (Phase 8).
+> Status: **complete** (Phases 0-8). The project report is in [`docs/report.md`](docs/report.md).
 
 ## Prerequisites
 
@@ -135,18 +135,29 @@ start and end of the session; your `spectra` data is never touched. Highlights:
 | `test_parity.py` | `queries/*.js` produce the same validators and identical aggregation results as Python (skipped if `mongosh` is not on PATH) |
 | `test_verify_and_seed.py` | seeded data passes every invariant; planted faults are caught; the mongosh demo scripts run cleanly |
 
+## Documentation
+
+| File | For |
+|---|---|
+| [`docs/report.md`](docs/report.md) | The project report, structured to the rubric (design, validation, CRUD, pipelines, indexes, PyMongo, ML, production) |
+| [`docs/explain_results.md`](docs/explain_results.md) | Generated before/after `explain()` tables on 50,000 bookings |
+| [`docs/screenshots/`](docs/screenshots/) | Screenshots of major operations referenced by the report |
+
 ## Project layout
 
-Layering rule: **views → services → repositories → PyMongo**. Only `repositories/`
-(and the client factory in `core/db.py`) import PyMongo.
+Layering rule: **views → services → repositories → PyMongo**. On the request path only
+`repositories/` (and the client factory in `core/db.py`) import PyMongo; the admin commands in
+`core/management/commands` (init_db, seed, verify_data, explain_report) talk to the database directly.
 
 ```
 festflow/       Django project (settings, urls, wsgi)
-core/           Mongo client, schemas, indexes, auth, converters, management commands
-repositories/   all PyMongo calls
+core/           Mongo client, schemas (validators), indexes, auth, errors, management commands
+repositories/   all PyMongo calls, incl. every aggregation pipeline (analytics_repo.py)
 services/       business rules (no PyMongo)
-web/            views, forms, templates
-queries/        mongosh twins of every PyMongo query
-tests/          pytest + pytest-django
-docs/           report, demo script, viva questions, screenshots
+web/            views, forms, templates, static (Bootstrap + Chart.js)
+ml/             optional no-show predictor (scikit-learn)
+queries/        mongosh twins: 00 setup, 01 validation demo, 02 CRUD, 03 aggregations, 04 explain, 05 verify
+data/           sample_venues.json for import_venues
+tests/          pytest + pytest-django (135 tests)
+docs/           report, explain results, screenshots
 ```

@@ -24,3 +24,8 @@ ml/artifacts/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Personal viva-prep docs (local only; docs/report.md and docs/explain_results.md are shared)
+docs/demo_script.md
+docs/viva_questions.md
+docs/screenshots/checklist.md

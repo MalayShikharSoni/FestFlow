@@ -11,7 +11,7 @@
 //
 // CRUD coverage (where each operation is used in the Python code):
 //   insertOne ............ venues_repo.insert_venue, events_repo.insert_event, users_repo.insert_user, bookings_repo.insert_booking
-//   insertMany/bulkWrite . seed command (see core/management/commands/seed.py)
+//   insertMany/bulkWrite . seed.insert_documents (core/management/commands/seed.py)
 //   find + projection + sort + skip/limit ... events_repo.list_events
 //   findOne .............. events_repo.get_event, users_repo.get_user, ...
 //   countDocuments ....... events_repo.count_events, bookings_repo.count_for_event, ...
@@ -323,6 +323,24 @@ show("users_repo.delete_inactive_attendees", db.users.deleteMany({
   createdAt: { $lt: new Date("2001-01-01") },
   _id: { $nin: db.bookings.distinct("userId") },
 }));
+
+// =============================================================================
+print("\n=================== seed / analytics_repo extras ===================");
+
+// seed.insert_documents: insert_many for most collections, bulk_write for bookings.
+// ordered: false lets the server continue past a bad document and report them all.
+show("seed.insert_documents (insertMany, ordered: false)", db.users.insertMany([1, 2].map((n) => ({
+  name: `CRUD Seeded ${n}`, email: `crud.seeded${n}@spectra.test`, phone: "9000000003", role: "attendee",
+  passwordHash: "x", college: "Lovely Professional University", shifts: [], createdAt: now,
+})), { ordered: false }).insertedIds);
+show("seed.insert_documents (bulkWrite of InsertOne, ordered: false)", db.bookings.bulkWrite([
+  { insertOne: { document: demoBooking("0B1", 1) } },
+  { insertOne: { document: demoBooking("0B2", 2) } },
+], { ordered: false }).insertedCount);
+
+// analytics_repo.latest_activity: "data as of" on the dashboard — newest booking first, one document.
+show("analytics_repo.latest_activity",
+  db.bookings.find({}, { bookedAt: 1 }).sort({ bookedAt: -1 }).limit(1).toArray()[0].bookedAt);
 
 // =============================================================================
 print("\n=================== events_repo.delete_event ===================");
