@@ -2,17 +2,20 @@
 Application exceptions.
 
 Services raise these and views catch them, so views never need to import PyMongo
-error classes. ValidationFailed also translates MongoDB's errInfo (a deeply
-nested explanation of why a document broke the validator) into short
-(field, message) pairs that a template can show.
+error classes. Repositories wrap their writes in `mongo_errors(...)`, which turns
+PyMongo errors into these classes. ValidationFailed also translates MongoDB's
+errInfo (a deeply nested explanation of why a document broke the validator) into
+short (field, message) pairs that a template can show.
 """
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 
-from pymongo.errors import WriteError
+from pymongo.errors import DuplicateKeyError, OperationFailure
 
 from core.schemas import rule_name
 
 DOCUMENT_VALIDATION_FAILURE = 121  # MongoDB error code for a validator rejection
+DUPLICATE_KEY = 11000              # a unique index already holds this value
 
 Problem = tuple[str, str]  # (field path, message), e.g. ("tickets[0].code", "regular expression did not match")
 
@@ -33,6 +36,19 @@ class RuleViolation(FestFlowError):
     """A business rule enforced in services/ (one the validator cannot express) was broken."""
 
 
+class DuplicateError(FestFlowError):
+    """A unique index rejected the write (code 11000), e.g. an email that is already registered."""
+
+    def __init__(self, collection: str, key_value: dict[str, Any]):
+        self.collection = collection
+        self.key_value = key_value  # e.g. {"email": "a@b.in"} — which unique field clashed
+        super().__init__(f"{collection}: duplicate value for {', '.join(key_value) or 'a unique field'}")
+
+    @property
+    def fields(self) -> list[str]:
+        return list(self.key_value)
+
+
 class ValidationFailed(FestFlowError):
     """MongoDB rejected a write because it broke the collection's validator (code 121)."""
 
@@ -48,13 +64,28 @@ class ValidationFailed(FestFlowError):
         return [field for field, _ in self.problems]
 
     @classmethod
-    def from_write_error(cls, exc: WriteError, collection: str) -> "ValidationFailed":
+    def from_write_error(cls, exc: OperationFailure, collection: str) -> "ValidationFailed":
         err_info = (exc.details or {}).get("errInfo", {})
         return cls(collection, describe_err_info(collection, err_info), err_info)
 
 
-def is_validation_error(exc: Exception) -> bool:
-    return isinstance(exc, WriteError) and exc.code == DOCUMENT_VALIDATION_FAILURE
+@contextmanager
+def mongo_errors(collection: str) -> Iterator[None]:
+    """Translate PyMongo write errors into FestFlow exceptions.
+
+    insert_one/update_one raise WriteError (a subclass of OperationFailure),
+    but find_one_and_update runs the findAndModify *command* and raises a plain
+    OperationFailure — so we catch the parent class and look at the code.
+    DuplicateKeyError must be caught first because it is also a WriteError.
+    """
+    try:
+        yield
+    except DuplicateKeyError as exc:
+        raise DuplicateError(collection, (exc.details or {}).get("keyValue", {})) from exc
+    except OperationFailure as exc:
+        if exc.code == DOCUMENT_VALIDATION_FAILURE:
+            raise ValidationFailed.from_write_error(exc, collection) from exc
+        raise
 
 
 # --- errInfo parsing ---------------------------------------------------------

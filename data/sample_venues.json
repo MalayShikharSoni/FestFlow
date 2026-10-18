@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Block 34 Seminar Hall",
+    "block": "Block 34",
+    "sections": [{"name": "Hall", "capacity": 260}],
+    "facilities": ["projector", "sound_system", "ac", "wheelchair_access"]
+  },
+  {
+    "name": "Unipolis Rooftop",
+    "block": "Block 36",
+    "sections": [{"name": "Deck", "capacity": 400}, {"name": "Lounge", "capacity": 120}],
+    "facilities": ["sound_system", "stage"]
+  }
+]
