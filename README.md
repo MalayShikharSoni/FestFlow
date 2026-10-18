@@ -5,7 +5,7 @@ College-fest ticketing, check-in, volunteer scheduling and live analytics, built
 
 Course project for CSE494 — Intelligent NoSQL Databases.
 
-> Status: **Phase 0 (scaffold)**. Later phases add validators, seed data, CRUD, aggregations, UI, tests and docs.
+> Status: **Phase 1 (schema, validators, indexes)**. Later phases add seed data, CRUD, aggregations, UI, tests and docs.
 
 ## Prerequisites
 
@@ -39,6 +39,22 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/health/ — it should show *Connected (ping ok)*, the server
 version, and *make_password / check_password work*.
+
+### Initialise the database (validators + indexes)
+
+```bash
+python manage.py init_db                      # idempotent; re-run after changing core/schemas.py
+```
+
+The same setup in mongosh, plus a demo of writes the validators reject:
+
+```bash
+docker exec -it festflow-mongo mongosh spectra /queries/00_setup.js
+docker exec -it festflow-mongo mongosh spectra /queries/01_validation_demo.js
+# without Docker (native mongod + mongosh on PATH):
+mongosh spectra queries/00_setup.js
+mongosh spectra queries/01_validation_demo.js
+```
 
 > If a native MongoDB service already listens on 27017, `docker compose up` cannot bind
 > that port. Either stop the native service or use it instead of Docker.
